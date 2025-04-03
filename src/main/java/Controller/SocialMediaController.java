@@ -8,65 +8,75 @@ import Service.MessageService;
 import io.javalin.Javalin;
 import io.javalin.http.Context;
 
+// Controller class that defines all the REST API endpoints for the application.
 public class SocialMediaController {
     
     private AccountService accountService = new AccountService();
     private MessageService messageService = new MessageService();
     
+    // Initializes and returns a Javalin app with all endpoints configured.
     public Javalin startAPI() {
         Javalin app = Javalin.create();
 
-        // User Registration
+        // Endpoint for user registration.
         app.post("/register", this::handleRegister);
 
-        // Login
+        // Endpoint for user login.
         app.post("/login", this::handleLogin);
 
-        // Create a new message
+        // Endpoint for creating a new message.
         app.post("/messages", this::handleCreateMessage);
 
-        // Get all messages
+        // Endpoint for retrieving all messages.
         app.get("/messages", this::handleGetAllMessages);
 
-        // Get one message by message_id
+        // Endpoint for retrieving a single message by its ID.
         app.get("/messages/{message_id}", this::handleGetMessageById);
 
-        // Delete a message by message_id
+        // Endpoint for deleting a message by its ID.
         app.delete("/messages/{message_id}", this::handleDeleteMessageById);
 
-        // Update a message by message_id (expects JSON with "message_text")
+        // Endpoint for updating a message's text (expects JSON with "message_text").
         app.patch("/messages/{message_id}", this::handleUpdateMessage);
 
-        // Get all messages for a given account_id
+        // Endpoint for retrieving all messages for a given account.
         app.get("/accounts/{account_id}/messages", this::handleGetMessagesByAccountId);
         
         return app;
     }
     
+    // Handler for user registration.
     private void handleRegister(Context ctx) {
         try {
+            // Parse the request body into an Account object.
             Account account = ctx.bodyAsClass(Account.class);
+            // Register the account using the service.
             Account created = accountService.register(account);
+            // Return the created account as JSON.
             ctx.json(created);
         } catch(IllegalArgumentException e) {
+            // On validation failure, return status 400 with an empty body.
             ctx.status(400).result("");
         } catch(Exception e) {
             ctx.status(500).result("Internal server error.");
         }
     }
     
+    // Handler for user login.
     private void handleLogin(Context ctx) {
         try {
             Account account = ctx.bodyAsClass(Account.class);
             Account loggedIn = accountService.login(account);
             ctx.json(loggedIn);
         } catch(IllegalArgumentException e) {
+            // On invalid credentials, return status 401 with an empty body.
             ctx.status(401).result("");
         } catch(Exception e) {
             ctx.status(500).result("Internal server error.");
         }
     }
     
+    // Handler for creating a new message.
     private void handleCreateMessage(Context ctx) {
         try {
             Message message = ctx.bodyAsClass(Message.class);
@@ -79,6 +89,7 @@ public class SocialMediaController {
         }
     }
     
+    // Handler for retrieving all messages.
     private void handleGetAllMessages(Context ctx) {
         try {
             ctx.json(messageService.getAllMessages());
@@ -87,10 +98,12 @@ public class SocialMediaController {
         }
     }
     
+    // Handler for retrieving a single message by its ID.
     private void handleGetMessageById(Context ctx) {
         try {
             int message_id = Integer.parseInt(ctx.pathParam("message_id"));
             Message message = messageService.getMessageById(message_id);
+            // If message is not found, return an empty body.
             if (message == null) {
                 ctx.result("");
             } else {
@@ -101,10 +114,12 @@ public class SocialMediaController {
         }
     }
     
+    // Handler for deleting a message by its ID.
     private void handleDeleteMessageById(Context ctx) {
         try {
             int message_id = Integer.parseInt(ctx.pathParam("message_id"));
             Message deleted = messageService.deleteMessageById(message_id);
+            // Return the deleted message if found; otherwise, return an empty body.
             if (deleted != null) {
                 ctx.json(deleted);
             } else {
@@ -115,10 +130,11 @@ public class SocialMediaController {
         }
     }
     
+    // Handler for updating a message's text.
     private void handleUpdateMessage(Context ctx) {
         try {
             int message_id = Integer.parseInt(ctx.pathParam("message_id"));
-            // Parse JSON body to extract "message_text"
+            // Parse the JSON body into an UpdateMessageRequest object.
             UpdateMessageRequest updateReq = ctx.bodyAsClass(UpdateMessageRequest.class);
             String newText = updateReq.getMessage_text();
             Message updated = messageService.updateMessage(message_id, newText);
@@ -130,6 +146,7 @@ public class SocialMediaController {
         }
     }
     
+    // Handler for retrieving all messages for a specific account.
     private void handleGetMessagesByAccountId(Context ctx) {
         try {
             int account_id = Integer.parseInt(ctx.pathParam("account_id"));
